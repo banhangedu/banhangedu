@@ -4,7 +4,7 @@
   "private": true,
   "description": "Dedicated n8n host for Video Factory on Render",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "dependencies": {
     "n8n": "2.22.4"
