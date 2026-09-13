@@ -1,0 +1,15 @@
+{
+  "name": "video-factory-n8n-hosting",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dedicated n8n host for Video Factory on Render",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "n8n": "2.22.4"
+  },
+  "scripts": {
+    "start": "n8n start"
+  }
+}
