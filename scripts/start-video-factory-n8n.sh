@@ -6,8 +6,10 @@ WORKFLOW_DIR="$(pwd)/workflows/vf-canary"
 STRUCTURE_MARKER="/home/node/.n8n/.vf_stage_structure_v1_logged"
 PARAM_MARKER="/home/node/.n8n/.vf_selected_params_v1_logged"
 PREVIEW_MARKER="/home/node/.n8n/.vf_canary_preview_v1_imported"
+STAGE_B_SWAP_MARKER="/home/node/.n8n/.vf_stage_b_canary_v1_swapped"
 INSPECT_DIR="/tmp/vf-structure"
 PREVIEW_DIR="/tmp/vf-canary-preview"
+SWAP_DIR="/tmp/vf-canary-swap"
 
 if [ ! -f "$MARKER" ]; then
   echo "[VF] Importing Canary V1 sub-workflows..."
@@ -59,6 +61,20 @@ if [ ! -f "$PREVIEW_MARKER" ]; then
   echo "[VF] Inactive Canary preview clones imported; production workflows unchanged."
 else
   echo "[VF] Canary preview clones already imported; skipping."
+fi
+
+if [ ! -f "$STAGE_B_SWAP_MARKER" ]; then
+  mkdir -p "$SWAP_DIR"
+  echo "[VF-SWAP] Exporting inactive production Stage B for guarded Canary patch..."
+  n8n export:workflow --id=tBMYELKUd0kfV4o2 --output="$SWAP_DIR/stage-b-current.json"
+  node scripts/patch-stage-b-canary-in-place.mjs     "$SWAP_DIR/stage-b-current.json"     "$SWAP_DIR/stage-b-canary.json"
+  n8n import:workflow --input="$SWAP_DIR/stage-b-canary.json"
+  n8n export:workflow --id=tBMYELKUd0kfV4o2 --output="$SWAP_DIR/stage-b-verify.json"
+  node scripts/inspect-workflow-structure.mjs "$SWAP_DIR/stage-b-verify.json" STAGE_B_CANARY_VERIFY
+  touch "$STAGE_B_SWAP_MARKER"
+  echo "[VF-SWAP] Stage B Canary patch imported and left inactive for verification."
+else
+  echo "[VF-SWAP] Stage B Canary patch already imported; skipping."
 fi
 
 exec n8n start
