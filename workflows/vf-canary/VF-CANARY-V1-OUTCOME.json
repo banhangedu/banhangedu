@@ -1,0 +1,118 @@
+{
+  "name": "VF-CANARY-V1 - OUTCOME",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b1111111-1111-4111-8111-111111111111",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json || {};\nconst workspace_id = input.workspace_id || $env.VF_WORKSPACE_ID;\nconst required = ['experiment_id', 'video_job_id', 'variant_key'];\n\nif (!workspace_id) throw new Error('VF_CANARY: workspace_id missing');\nfor (const key of required) {\n  if (!input[key]) throw new Error('VF_CANARY: ' + key + ' missing');\n}\nif (!['control', 'candidate'].includes(input.variant_key)) {\n  throw new Error('VF_CANARY: variant_key must be control or candidate');\n}\n\nreturn [{\n  json: {\n    workspace_id,\n    experiment_id: input.experiment_id,\n    video_job_id: input.video_job_id,\n    variant_key: input.variant_key,\n    quality_score: input.quality_score ?? null,\n    performance_score: input.performance_score ?? null,\n    render_success: input.render_success ?? null,\n    metrics: input.metrics || {}\n  }\n}];"
+      },
+      "id": "b2222222-2222-4222-8222-222222222222",
+      "name": "Validate Outcome Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VF_EDIT_PLANNER_URL + '/v1/experiments/outcomes' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.VF_SERVICE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "b3333333-3333-4333-8333-333333333333",
+      "name": "Record Canary Outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json || {};\nif (response.ok !== true) {\n  throw new Error('VF_CANARY: outcome API returned invalid response');\n}\nreturn [{\n  json: {\n    vf_canary_outcome: {\n      recorded: true,\n      idempotent: response.data?.idempotent === true,\n      automatic_promotion: false,\n      observation_id: response.data?.observation?.id || null\n    }\n  }\n}];"
+      },
+      "id": "b4444444-4444-4444-8444-444444444444",
+      "name": "Normalize Outcome Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Validate Outcome Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Outcome Input": {
+      "main": [
+        [
+          {
+            "node": "Record Canary Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Canary Outcome": {
+      "main": [
+        [
+          {
+            "node": "Normalize Outcome Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b5555555-5555-4555-8555-555555555555",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "id": "VfCanaryOutcome1"
+}
