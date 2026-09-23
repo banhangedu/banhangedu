@@ -9,6 +9,7 @@ PREVIEW_MARKER="/home/node/.n8n/.vf_canary_preview_v1_imported"
 STAGE_B_SWAP_MARKER="/home/node/.n8n/.vf_stage_b_canary_v1_swapped"
 ACTIVE_AUDIT_MARKER="/home/node/.n8n/.vf_active_state_audit_v1_logged"
 TRIGGER_AUDIT_MARKER="/home/node/.n8n/.vf_stage_b_trigger_audit_v1_logged"
+STAGE_B_V8_SWAP_MARKER="/home/node/.n8n/.vf_stage_b_v8_analyzer_auth_swapped"
 INSPECT_DIR="/tmp/vf-structure"
 PREVIEW_DIR="/tmp/vf-canary-preview"
 SWAP_DIR="/tmp/vf-canary-swap"
@@ -95,6 +96,20 @@ if [ ! -f "$TRIGGER_AUDIT_MARKER" ]; then
   node scripts/inspect-stage-b-trigger.mjs "$INSPECT_DIR/stage-b-trigger-audit.json"
   touch "$TRIGGER_AUDIT_MARKER"
   echo "[VF-TRIGGER-AUDIT] Audit complete."
+fi
+
+if [ ! -f "$STAGE_B_V8_SWAP_MARKER" ]; then
+  mkdir -p "$SWAP_DIR"
+  echo "[VF-SWAP-V8] Exporting production Stage B for guarded V8 auth patch..."
+  n8n export:workflow --id=tBMYELKUd0kfV4o2 --output="$SWAP_DIR/stage-b-v7-current.json"
+  node scripts/patch-stage-b-v8-analyzer-auth.mjs     "$SWAP_DIR/stage-b-v7-current.json"     "$SWAP_DIR/stage-b-v8.json"
+  n8n import:workflow --input="$SWAP_DIR/stage-b-v8.json"
+  n8n export:workflow --id=tBMYELKUd0kfV4o2 --output="$SWAP_DIR/stage-b-v8-verify.json"
+  node scripts/inspect-workflow-structure.mjs "$SWAP_DIR/stage-b-v8-verify.json" STAGE_B_V8_VERIFY
+  touch "$STAGE_B_V8_SWAP_MARKER"
+  echo "[VF-SWAP-V8] Stage B V8 auth patch imported and left inactive."
+else
+  echo "[VF-SWAP-V8] Stage B V8 auth patch already imported; skipping."
 fi
 
 exec n8n start
