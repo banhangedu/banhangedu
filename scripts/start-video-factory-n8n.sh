@@ -8,6 +8,7 @@ PARAM_MARKER="/home/node/.n8n/.vf_selected_params_v1_logged"
 PREVIEW_MARKER="/home/node/.n8n/.vf_canary_preview_v1_imported"
 STAGE_B_SWAP_MARKER="/home/node/.n8n/.vf_stage_b_canary_v1_swapped"
 ACTIVE_AUDIT_MARKER="/home/node/.n8n/.vf_active_state_audit_v1_logged"
+TRIGGER_AUDIT_MARKER="/home/node/.n8n/.vf_stage_b_trigger_audit_v1_logged"
 INSPECT_DIR="/tmp/vf-structure"
 PREVIEW_DIR="/tmp/vf-canary-preview"
 SWAP_DIR="/tmp/vf-canary-swap"
@@ -86,6 +87,14 @@ if [ ! -f "$ACTIVE_AUDIT_MARKER" ]; then
   node scripts/audit-active-workflows.mjs     STAGE_B "$INSPECT_DIR/stage-b-active-audit.json"     STAGE_C "$INSPECT_DIR/stage-c-active-audit.json"     STAGE_D "$INSPECT_DIR/stage-d-active-audit.json"
   touch "$ACTIVE_AUDIT_MARKER"
   echo "[VF-ACTIVE-AUDIT] Audit complete."
+fi
+
+if [ ! -f "$TRIGGER_AUDIT_MARKER" ]; then
+  echo "[VF-TRIGGER-AUDIT] Exporting current Stage B trigger metadata..."
+  n8n export:workflow --id=tBMYELKUd0kfV4o2 --output="$INSPECT_DIR/stage-b-trigger-audit.json"
+  node scripts/inspect-stage-b-trigger.mjs "$INSPECT_DIR/stage-b-trigger-audit.json"
+  touch "$TRIGGER_AUDIT_MARKER"
+  echo "[VF-TRIGGER-AUDIT] Audit complete."
 fi
 
 exec n8n start
