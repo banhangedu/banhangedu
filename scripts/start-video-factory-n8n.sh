@@ -5,7 +5,9 @@ MARKER="/home/node/.n8n/.vf_canary_v1_imported"
 WORKFLOW_DIR="$(pwd)/workflows/vf-canary"
 STRUCTURE_MARKER="/home/node/.n8n/.vf_stage_structure_v1_logged"
 PARAM_MARKER="/home/node/.n8n/.vf_selected_params_v1_logged"
+PREVIEW_MARKER="/home/node/.n8n/.vf_canary_preview_v1_imported"
 INSPECT_DIR="/tmp/vf-structure"
+PREVIEW_DIR="/tmp/vf-canary-preview"
 
 if [ ! -f "$MARKER" ]; then
   echo "[VF] Importing Canary V1 sub-workflows..."
@@ -44,6 +46,19 @@ if [ ! -f "$PARAM_MARKER" ]; then
   else
     echo "[VF] Selected parameter inspection failed; n8n will still start normally."
   fi
+fi
+
+if [ ! -f "$PREVIEW_MARKER" ]; then
+  mkdir -p "$PREVIEW_DIR"
+  echo "[VF] Building inactive Canary Stage B/D preview clones..."
+  n8n export:workflow --id=tBMYELKUd0kfV4o2 --output="$INSPECT_DIR/stage-b-preview-source.json"
+  n8n export:workflow --id=SDrtyhG2abJ3izco --output="$INSPECT_DIR/stage-d-preview-source.json"
+  node scripts/build-canary-preview-workflows.mjs     "$INSPECT_DIR/stage-b-preview-source.json"     "$INSPECT_DIR/stage-d-preview-source.json"     "$PREVIEW_DIR"
+  n8n import:workflow --separate --input="$PREVIEW_DIR"
+  touch "$PREVIEW_MARKER"
+  echo "[VF] Inactive Canary preview clones imported; production workflows unchanged."
+else
+  echo "[VF] Canary preview clones already imported; skipping."
 fi
 
 exec n8n start
