@@ -126,4 +126,18 @@ if [ ! -f "$LIVE_STAGE_B_V8_AUDIT_MARKER" ]; then
   fi
 fi
 
+
+HOTPATH_AUDIT_MARKER="/home/node/.n8n/.vf_stage_b_v8_hotpath_v1_logged"
+
+if [ ! -f "$HOTPATH_AUDIT_MARKER" ]; then
+  echo "[VF-HOTPATH] Exporting current active Stage B V8 hot path..."
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$INSPECT_DIR/stage-b-v8-hotpath.json"; then
+    node scripts/inspect-stage-b-v8-hotpath.mjs "$INSPECT_DIR/stage-b-v8-hotpath.json"
+    touch "$HOTPATH_AUDIT_MARKER"
+    echo "[VF-HOTPATH] Stage B V8 hot-path inspection complete."
+  else
+    echo "[VF-HOTPATH] Stage B V8 hot-path export failed; n8n will still start normally."
+  fi
+fi
+
 exec n8n start
