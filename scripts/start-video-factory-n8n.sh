@@ -274,4 +274,24 @@ else
   echo "[VF-B-PROD-V9] Production Stage B V9 already applied; skipping."
 fi
 
+
+CANARY_CLEANUP_MARKER="/home/node/.n8n/.vf_post_promotion_canary_cleanup_v1"
+
+if [ ! -f "$CANARY_CLEANUP_MARKER" ]; then
+  echo "[VF-CLEANUP] Unpublishing promoted canary workflows to reduce runtime overhead..."
+  ok=1
+  n8n unpublish:workflow --id=VfStageBV9Can01 || ok=0
+  n8n unpublish:workflow --id=VfStageCV3Can01 || ok=0
+  n8n unpublish:workflow --id=VfStageCV4Can01 || ok=0
+
+  if [ "$ok" -eq 1 ]; then
+    touch "$CANARY_CLEANUP_MARKER"
+    echo "[VF-CLEANUP] Canary workflows unpublished; production workflows remain published."
+  else
+    echo "[VF-CLEANUP] One or more canary unpublish commands failed; will retry next restart."
+  fi
+else
+  echo "[VF-CLEANUP] Canary cleanup already applied; skipping."
+fi
+
 exec n8n start
