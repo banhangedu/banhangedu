@@ -410,4 +410,24 @@ if [ -f "scripts/promote-stage-d-v2.sh" ]; then
   sh scripts/promote-stage-d-v2.sh || echo "[VF-D2] promotion helper failed; n8n will still start"
 fi
 
+
+FINAL_CODE_AUDIT_V2_MARKER="/home/node/.n8n/.vf_prod_code_node_audit_v2"
+
+if [ ! -f "$FINAL_CODE_AUDIT_V2_MARKER" ]; then
+  echo "[VF-CODE-AUDIT-V2] Exporting final production workflows..."
+  mkdir -p "$INSPECT_DIR/code-audit-v2"
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$INSPECT_DIR/code-audit-v2/stage-b.json" \
+    && n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$INSPECT_DIR/code-audit-v2/stage-c.json" \
+    && n8n export:workflow --id=SDrtyhG2abJ3izco --output="$INSPECT_DIR/code-audit-v2/stage-d.json"; then
+    node scripts/audit-production-code-nodes.mjs \
+      "$INSPECT_DIR/code-audit-v2/stage-b.json" \
+      "$INSPECT_DIR/code-audit-v2/stage-c.json" \
+      "$INSPECT_DIR/code-audit-v2/stage-d.json"
+    touch "$FINAL_CODE_AUDIT_V2_MARKER"
+    echo "[VF-CODE-AUDIT-V2] Final production Code-node audit complete."
+  else
+    echo "[VF-CODE-AUDIT-V2] Export failed; n8n will still start normally."
+  fi
+fi
+
 exec n8n start
