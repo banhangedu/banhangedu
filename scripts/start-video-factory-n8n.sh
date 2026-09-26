@@ -149,8 +149,9 @@ if [ ! -f "$STAGE_B_V9_CANARY_MARKER" ]; then
   if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$SWAP_DIR/stage-b-v8-live-for-v9.json"; then
     node scripts/build-stage-b-v9-canary.mjs "$SWAP_DIR/stage-b-v8-live-for-v9.json" "$SWAP_DIR/stage-b-v9-canary.json"
     n8n import:workflow --input="$SWAP_DIR/stage-b-v9-canary.json"
+    n8n publish:workflow --id=VfStageBV9Can01
     touch "$STAGE_B_V9_CANARY_MARKER"
-    echo "[VF-V9] Stage B V9 canary imported."
+    echo "[VF-V9] Stage B V9 canary imported and published."
   else
     echo "[VF-V9] Live V8 export failed; V9 canary was not imported."
   fi
