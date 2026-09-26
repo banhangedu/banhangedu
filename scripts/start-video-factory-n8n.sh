@@ -430,4 +430,23 @@ if [ ! -f "$FINAL_CODE_AUDIT_V2_MARKER" ]; then
   fi
 fi
 
+
+STAGE_C_V5_ADAPTIVE_MARKER="/home/node/.n8n/.vf_stage_c_v5_adaptive_canary_imported"
+
+if [ ! -f "$STAGE_C_V5_ADAPTIVE_MARKER" ]; then
+  echo "[VF-C-V5] Building Stage C V5 adaptive-health canary..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$SWAP_DIR/stage-c-prod-for-v5.json"; then
+    node scripts/build-stage-c-v5-adaptive-health-canary.mjs "$SWAP_DIR/stage-c-prod-for-v5.json" "$SWAP_DIR/stage-c-v5-adaptive.json"
+    n8n import:workflow --input="$SWAP_DIR/stage-c-v5-adaptive.json"
+    n8n publish:workflow --id=VfStageCV5Can01
+    touch "$STAGE_C_V5_ADAPTIVE_MARKER"
+    echo "[VF-C-V5] Stage C V5 adaptive-health canary imported and published."
+  else
+    echo "[VF-C-V5] Production Stage C export failed; canary skipped."
+  fi
+else
+  echo "[VF-C-V5] Stage C V5 adaptive-health canary already imported; skipping."
+fi
+
 exec n8n start
