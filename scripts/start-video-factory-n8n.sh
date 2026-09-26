@@ -159,4 +159,19 @@ else
   echo "[VF-V9] Stage B V9 canary already imported; skipping."
 fi
 
+
+STAGE_B_V9_PUBLISH_MARKER="/home/node/.n8n/.vf_stage_b_v9_fast_warm_canary_published"
+
+if [ ! -f "$STAGE_B_V9_PUBLISH_MARKER" ]; then
+  echo "[VF-V9] Publishing Stage B V9 canary..."
+  if n8n publish:workflow --id=VfStageBV9Can01; then
+    touch "$STAGE_B_V9_PUBLISH_MARKER"
+    echo "[VF-V9] Stage B V9 canary published."
+  else
+    echo "[VF-V9] Stage B V9 canary publish failed; n8n will still start normally."
+  fi
+else
+  echo "[VF-V9] Stage B V9 canary already published; skipping."
+fi
+
 exec n8n start
