@@ -387,4 +387,23 @@ else
   echo "[VF-B-PROD-V10] Production Stage B V10 already applied; skipping."
 fi
 
+
+STAGE_D_V2_NOCODE_MARKER="/home/node/.n8n/.vf_stage_d_v2_nocode_canary_imported"
+
+if [ ! -f "$STAGE_D_V2_NOCODE_MARKER" ]; then
+  echo "[VF-D-V2] Building Stage D V2 no-code canary..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=SDrtyhG2abJ3izco --output="$SWAP_DIR/stage-d-prod-for-v2.json"; then
+    node scripts/build-stage-d-v2-nocode-canary.mjs "$SWAP_DIR/stage-d-prod-for-v2.json" "$SWAP_DIR/stage-d-v2-nocode.json"
+    n8n import:workflow --input="$SWAP_DIR/stage-d-v2-nocode.json"
+    n8n publish:workflow --id=VfStageDV2Can01
+    touch "$STAGE_D_V2_NOCODE_MARKER"
+    echo "[VF-D-V2] Stage D V2 no-code canary imported and published."
+  else
+    echo "[VF-D-V2] Production Stage D export failed; canary skipped."
+  fi
+else
+  echo "[VF-D-V2] Stage D V2 no-code canary already imported; skipping."
+fi
+
 exec n8n start
