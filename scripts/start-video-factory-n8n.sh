@@ -449,4 +449,23 @@ else
   echo "[VF-C-V5] Stage C V5 adaptive-health canary already imported; skipping."
 fi
 
+
+STAGE_C_V5_PROD_MARKER="/home/node/.n8n/.vf_stage_c_v5_adaptive_prod_applied"
+
+if [ ! -f "$STAGE_C_V5_PROD_MARKER" ]; then
+  echo "[VF-C-V5-PROD] Applying guarded adaptive-health patch to production Stage C..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$SWAP_DIR/stage-c-production-before-v5.json"; then
+    node scripts/build-stage-c-v5-adaptive-health-canary.mjs "$SWAP_DIR/stage-c-production-before-v5.json" "$SWAP_DIR/stage-c-production-v5.json" --production
+    n8n import:workflow --input="$SWAP_DIR/stage-c-production-v5.json"
+    n8n publish:workflow --id=FUp4QgPhLs4PBD2L
+    touch "$STAGE_C_V5_PROD_MARKER"
+    echo "[VF-C-V5-PROD] Production Stage C updated to adaptive-health V5."
+  else
+    echo "[VF-C-V5-PROD] Production Stage C export failed; patch skipped."
+  fi
+else
+  echo "[VF-C-V5-PROD] Production Stage C V5 already applied; skipping."
+fi
+
 exec n8n start
