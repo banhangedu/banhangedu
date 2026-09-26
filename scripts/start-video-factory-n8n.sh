@@ -294,4 +294,21 @@ else
   echo "[VF-CLEANUP] Canary cleanup already applied; skipping."
 fi
 
+
+FINAL_PROD_AUDIT_MARKER="/home/node/.n8n/.vf_final_prod_audit_v1"
+
+if [ ! -f "$FINAL_PROD_AUDIT_MARKER" ]; then
+  echo "[VF-FINAL-AUDIT] Exporting final production B/C/D..."
+  mkdir -p "$INSPECT_DIR/final-prod"
+  n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$INSPECT_DIR/final-prod/stage-b.json"
+  n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$INSPECT_DIR/final-prod/stage-c.json"
+  n8n export:workflow --id=SDrtyhG2abJ3izco --output="$INSPECT_DIR/final-prod/stage-d.json"
+  if node scripts/audit-final-production.mjs "$INSPECT_DIR/final-prod/stage-b.json" "$INSPECT_DIR/final-prod/stage-c.json" "$INSPECT_DIR/final-prod/stage-d.json"; then
+    touch "$FINAL_PROD_AUDIT_MARKER"
+    echo "[VF-FINAL-AUDIT] PASS"
+  else
+    echo "[VF-FINAL-AUDIT] FAIL"
+  fi
+fi
+
 exec n8n start
