@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const [inputFile, outputFile] = process.argv.slice(2);
+const [inputFile, outputFile, mode] = process.argv.slice(2);
 if (!inputFile || !outputFile) process.exit(2);
+const productionMode = mode === '--production';
 
 const raw = JSON.parse(readFileSync(inputFile, 'utf8'));
 const workflow = structuredClone(Array.isArray(raw) ? raw[0] : raw);
@@ -25,13 +26,19 @@ byName('VF-05 Source Analyzer');
 byName('VF-06 Call Edit Planner');
 byName('Safe Handoff to Stage C');
 
-workflow.id = 'VfStageBV9Can01';
-workflow.name = 'VF-MAIN-V1 STAGE B - V9 FAST WARM CANARY';
-workflow.active = true;
-
 const webhook = byName('Stage B Webhook');
 webhook.parameters ||= {};
-webhook.parameters.path = 'vf-main-v1-stage-b-v9-canary';
+
+if (productionMode) {
+  if (webhook.parameters.path !== 'vf-main-v1-stage-b') {
+    throw new Error('Refusing production V9 patch: unexpected webhook path ' + webhook.parameters.path);
+  }
+} else {
+  workflow.id = 'VfStageBV9Can01';
+  workflow.name = 'VF-MAIN-V1 STAGE B - V9 FAST WARM CANARY';
+  workflow.active = true;
+  webhook.parameters.path = 'vf-main-v1-stage-b-v9-canary';
+}
 
 workflow.nodes = (workflow.nodes || []).filter((n) => n.name !== 'Wait 60s for Services Warm');
 workflow.connections ||= {};
@@ -41,7 +48,7 @@ workflow.connections['Kick Edit Planner'] = {
 delete workflow.connections['Wait 60s for Services Warm'];
 
 writeFileSync(outputFile, JSON.stringify(workflow, null, 2));
-console.log('[VF-V9] Stage B V9 canary prepared');
+console.log(productionMode ? '[VF-V9] Production Stage B V9 patch prepared' : '[VF-V9] Stage B V9 canary prepared');
 console.log('[VF-V9] id=' + workflow.id);
 console.log('[VF-V9] active=' + workflow.active);
 console.log('[VF-V9] path=' + webhook.parameters.path);
