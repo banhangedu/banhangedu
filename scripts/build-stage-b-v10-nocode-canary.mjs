@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const [inputFile, outputFile] = process.argv.slice(2);
+const [inputFile, outputFile, mode] = process.argv.slice(2);
 if (!inputFile || !outputFile) process.exit(2);
+const productionMode = mode === '--production';
 
 const raw = JSON.parse(readFileSync(inputFile, 'utf8'));
 const workflow = structuredClone(Array.isArray(raw) ? raw[0] : raw);
@@ -23,10 +24,12 @@ const apply = byName('VF-CANARY Apply Profile');
 if (webhook.parameters?.path !== 'vf-main-v1-stage-b') throw new Error('Unexpected webhook path');
 if ((workflow.nodes || []).some((n) => n.name === 'Wait 60s for Services Warm')) throw new Error('Expected V9 baseline');
 
-workflow.id = 'VfStageBV10Can01';
-workflow.name = 'VF-MAIN-V1 STAGE B - V10 NO-CODE CANARY';
-workflow.active = true;
-webhook.parameters.path = 'vf-main-v1-stage-b-v10-canary';
+if (!productionMode) {
+  workflow.id = 'VfStageBV10Can01';
+  workflow.name = 'VF-MAIN-V1 STAGE B - V10 NO-CODE CANARY';
+  workflow.active = true;
+  webhook.parameters.path = 'vf-main-v1-stage-b-v10-canary';
+}
 
 attach.type = 'n8n-nodes-base.set';
 attach.typeVersion = 3.4;
@@ -56,4 +59,4 @@ const codes = (workflow.nodes || []).filter((n) => n.type === 'n8n-nodes-base.co
 if (codes.length) throw new Error('Code nodes remain: ' + codes.map((n) => n.name).join(', '));
 
 writeFileSync(outputFile, JSON.stringify(workflow, null, 2));
-console.log('[VF-B-V10] prepared code_node_count=0');
+console.log(productionMode ? '[VF-B-V10] production patch prepared code_node_count=0' : '[VF-B-V10] prepared code_node_count=0');
