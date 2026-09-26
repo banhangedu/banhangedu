@@ -406,4 +406,8 @@ else
   echo "[VF-D-V2] Stage D V2 no-code canary already imported; skipping."
 fi
 
+if [ -f "scripts/promote-stage-d-v2.sh" ]; then
+  sh scripts/promote-stage-d-v2.sh || echo "[VF-D2] promotion helper failed; n8n will still start"
+fi
+
 exec n8n start
