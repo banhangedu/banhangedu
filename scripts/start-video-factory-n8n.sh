@@ -311,4 +311,24 @@ if [ ! -f "$FINAL_PROD_AUDIT_MARKER" ]; then
   fi
 fi
 
+
+CODE_NODE_AUDIT_MARKER="/home/node/.n8n/.vf_prod_code_node_audit_v1"
+
+if [ ! -f "$CODE_NODE_AUDIT_MARKER" ]; then
+  echo "[VF-CODE-AUDIT] Exporting active production workflows for Code node audit..."
+  mkdir -p "$INSPECT_DIR/code-audit"
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$INSPECT_DIR/code-audit/stage-b.json" \
+    && n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$INSPECT_DIR/code-audit/stage-c.json" \
+    && n8n export:workflow --id=SDrtyhG2abJ3izco --output="$INSPECT_DIR/code-audit/stage-d.json"; then
+    node scripts/audit-production-code-nodes.mjs \
+      "$INSPECT_DIR/code-audit/stage-b.json" \
+      "$INSPECT_DIR/code-audit/stage-c.json" \
+      "$INSPECT_DIR/code-audit/stage-d.json"
+    touch "$CODE_NODE_AUDIT_MARKER"
+    echo "[VF-CODE-AUDIT] Production Code node audit complete."
+  else
+    echo "[VF-CODE-AUDIT] Export failed; n8n will still start normally."
+  fi
+fi
+
 exec n8n start
