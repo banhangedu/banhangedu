@@ -112,4 +112,18 @@ else
   echo "[VF-SWAP-V8] Stage B V8 auth patch already imported; skipping."
 fi
 
+
+LIVE_STAGE_B_V8_AUDIT_MARKER="/home/node/.n8n/.vf_stage_b_v8_live_structure_v1_logged"
+
+if [ ! -f "$LIVE_STAGE_B_V8_AUDIT_MARKER" ]; then
+  echo "[VF-LIVE-AUDIT] Exporting current active Stage B V8 structure..."
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$INSPECT_DIR/stage-b-v8-live.json"; then
+    node scripts/inspect-workflow-structure.mjs "$INSPECT_DIR/stage-b-v8-live.json" STAGE_B_V8_LIVE
+    touch "$LIVE_STAGE_B_V8_AUDIT_MARKER"
+    echo "[VF-LIVE-AUDIT] Stage B V8 live structure inspection complete."
+  else
+    echo "[VF-LIVE-AUDIT] Stage B V8 live structure export failed; n8n will still start normally."
+  fi
+fi
+
 exec n8n start
