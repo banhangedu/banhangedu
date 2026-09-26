@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const [inputFile, outputFile] = process.argv.slice(2);
+const [inputFile, outputFile, mode] = process.argv.slice(2);
 if (!inputFile || !outputFile) process.exit(2);
+const productionMode = mode === '--production';
 
 const raw = JSON.parse(readFileSync(inputFile, 'utf8'));
 const workflow = structuredClone(Array.isArray(raw) ? raw[0] : raw);
@@ -25,10 +26,12 @@ if (webhook.parameters?.path !== 'vf-main-v1-stage-c') {
   throw new Error('Unexpected Stage C production webhook path');
 }
 
-workflow.id = 'VfStageCV5Can01';
-workflow.name = 'VF-MAIN-V1 STAGE C - V5 ADAPTIVE HEALTH CANARY';
-workflow.active = true;
-webhook.parameters.path = 'vf-main-v1-stage-c-v5-canary';
+if (!productionMode) {
+  workflow.id = 'VfStageCV5Can01';
+  workflow.name = 'VF-MAIN-V1 STAGE C - V5 ADAPTIVE HEALTH CANARY';
+  workflow.active = true;
+  webhook.parameters.path = 'vf-main-v1-stage-c-v5-canary';
+}
 
 // Reuse the existing health-kick request, but make readiness explicit:
 // retry up to 6 times with a 5s gap, so a warm API proceeds immediately
@@ -49,7 +52,7 @@ workflow.connections[kick.name] = {
 delete workflow.connections[wait.name];
 
 writeFileSync(outputFile, JSON.stringify(workflow, null, 2));
-console.log('[VF-C-V5] adaptive health canary prepared');
+console.log(productionMode ? '[VF-C-V5] production adaptive-health patch prepared' : '[VF-C-V5] adaptive health canary prepared');
 console.log('[VF-C-V5] fixed_wait_seconds=0');
 console.log('[VF-C-V5] health_max_tries=6');
 console.log('[VF-C-V5] health_retry_gap_ms=5000');
