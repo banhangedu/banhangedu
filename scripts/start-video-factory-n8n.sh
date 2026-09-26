@@ -255,4 +255,23 @@ else
   echo "[VF-C-PROD-V3] Production Stage C 25s warm-up already applied; skipping."
 fi
 
+
+STAGE_B_V9_PROD_MARKER="/home/node/.n8n/.vf_stage_b_v9_prod_fast_warm_applied"
+
+if [ ! -f "$STAGE_B_V9_PROD_MARKER" ]; then
+  echo "[VF-B-PROD-V9] Applying guarded V9 fast-warm patch to production Stage B..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$SWAP_DIR/stage-b-production-before-v9.json"; then
+    node scripts/build-stage-b-v9-canary.mjs "$SWAP_DIR/stage-b-production-before-v9.json" "$SWAP_DIR/stage-b-production-v9.json" --production
+    n8n import:workflow --input="$SWAP_DIR/stage-b-production-v9.json"
+    n8n publish:workflow --id=HGAmd1Lp70DDVxyX
+    touch "$STAGE_B_V9_PROD_MARKER"
+    echo "[VF-B-PROD-V9] Production Stage B updated to V9 fast-warm."
+  else
+    echo "[VF-B-PROD-V9] Production Stage B export failed; patch skipped."
+  fi
+else
+  echo "[VF-B-PROD-V9] Production Stage B V9 already applied; skipping."
+fi
+
 exec n8n start
