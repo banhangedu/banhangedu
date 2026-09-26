@@ -140,4 +140,22 @@ if [ ! -f "$HOTPATH_AUDIT_MARKER" ]; then
   fi
 fi
 
+
+STAGE_B_V9_CANARY_MARKER="/home/node/.n8n/.vf_stage_b_v9_fast_warm_canary_imported"
+
+if [ ! -f "$STAGE_B_V9_CANARY_MARKER" ]; then
+  echo "[VF-V9] Building Stage B V9 fast-warm canary from live V8..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$SWAP_DIR/stage-b-v8-live-for-v9.json"; then
+    node scripts/build-stage-b-v9-canary.mjs "$SWAP_DIR/stage-b-v8-live-for-v9.json" "$SWAP_DIR/stage-b-v9-canary.json"
+    n8n import:workflow --input="$SWAP_DIR/stage-b-v9-canary.json"
+    touch "$STAGE_B_V9_CANARY_MARKER"
+    echo "[VF-V9] Stage B V9 canary imported."
+  else
+    echo "[VF-V9] Live V8 export failed; V9 canary was not imported."
+  fi
+else
+  echo "[VF-V9] Stage B V9 canary already imported; skipping."
+fi
+
 exec n8n start
