@@ -236,4 +236,23 @@ else
   echo "[VF-C-V4] Stage C V4 canary already published; skipping."
 fi
 
+
+STAGE_C_V3_PROD_MARKER="/home/node/.n8n/.vf_stage_c_v3_prod_25s_applied"
+
+if [ ! -f "$STAGE_C_V3_PROD_MARKER" ]; then
+  echo "[VF-C-PROD-V3] Applying guarded 25s warm-up to production Stage C..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$SWAP_DIR/stage-c-production-before-v3.json"; then
+    node scripts/build-stage-c-v3-canary.mjs "$SWAP_DIR/stage-c-production-before-v3.json" "$SWAP_DIR/stage-c-production-v3.json" --production
+    n8n import:workflow --input="$SWAP_DIR/stage-c-production-v3.json"
+    n8n publish:workflow --id=FUp4QgPhLs4PBD2L
+    touch "$STAGE_C_V3_PROD_MARKER"
+    echo "[VF-C-PROD-V3] Production Stage C updated to 25s warm-up."
+  else
+    echo "[VF-C-PROD-V3] Production Stage C export failed; patch skipped."
+  fi
+else
+  echo "[VF-C-PROD-V3] Production Stage C 25s warm-up already applied; skipping."
+fi
+
 exec n8n start
