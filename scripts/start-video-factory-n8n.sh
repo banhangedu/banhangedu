@@ -205,4 +205,35 @@ else
   echo "[VF-C-V3] Stage C V3 canary already published; skipping."
 fi
 
+
+STAGE_C_V4_CANARY_MARKER="/home/node/.n8n/.vf_stage_c_v4_20s_canary_imported"
+STAGE_C_V4_PUBLISH_MARKER="/home/node/.n8n/.vf_stage_c_v4_20s_canary_published"
+
+if [ ! -f "$STAGE_C_V4_CANARY_MARKER" ]; then
+  echo "[VF-C-V4] Building Stage C V4 20s canary..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=FUp4QgPhLs4PBD2L --output="$SWAP_DIR/stage-c-v2-live-for-v4.json"; then
+    node scripts/build-stage-c-v4-canary.mjs "$SWAP_DIR/stage-c-v2-live-for-v4.json" "$SWAP_DIR/stage-c-v4-canary.json"
+    n8n import:workflow --input="$SWAP_DIR/stage-c-v4-canary.json"
+    touch "$STAGE_C_V4_CANARY_MARKER"
+    echo "[VF-C-V4] Stage C V4 canary imported."
+  else
+    echo "[VF-C-V4] Stage C export failed; V4 canary skipped."
+  fi
+else
+  echo "[VF-C-V4] Stage C V4 canary already imported; skipping."
+fi
+
+if [ ! -f "$STAGE_C_V4_PUBLISH_MARKER" ]; then
+  echo "[VF-C-V4] Publishing Stage C V4 canary..."
+  if n8n publish:workflow --id=VfStageCV4Can01; then
+    touch "$STAGE_C_V4_PUBLISH_MARKER"
+    echo "[VF-C-V4] Stage C V4 canary published."
+  else
+    echo "[VF-C-V4] Stage C V4 publish failed; n8n will still start normally."
+  fi
+else
+  echo "[VF-C-V4] Stage C V4 canary already published; skipping."
+fi
+
 exec n8n start
