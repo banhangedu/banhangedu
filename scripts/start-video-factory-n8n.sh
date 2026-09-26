@@ -331,4 +331,22 @@ if [ ! -f "$CODE_NODE_AUDIT_MARKER" ]; then
   fi
 fi
 
+
+CODE_NODE_DETAIL_AUDIT_MARKER="/home/node/.n8n/.vf_prod_code_node_detail_audit_v1"
+
+if [ ! -f "$CODE_NODE_DETAIL_AUDIT_MARKER" ]; then
+  echo "[VF-CODE-DETAIL] Exporting production workflows for Code-node detail audit..."
+  mkdir -p "$INSPECT_DIR/code-detail"
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$INSPECT_DIR/code-detail/stage-b.json" \
+    && n8n export:workflow --id=SDrtyhG2abJ3izco --output="$INSPECT_DIR/code-detail/stage-d.json"; then
+    node scripts/audit-production-code-node-details.mjs \
+      "$INSPECT_DIR/code-detail/stage-b.json" \
+      "$INSPECT_DIR/code-detail/stage-d.json"
+    touch "$CODE_NODE_DETAIL_AUDIT_MARKER"
+    echo "[VF-CODE-DETAIL] Production Code-node detail audit complete."
+  else
+    echo "[VF-CODE-DETAIL] Export failed; n8n will still start normally."
+  fi
+fi
+
 exec n8n start
