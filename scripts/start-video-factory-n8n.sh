@@ -349,4 +349,23 @@ if [ ! -f "$CODE_NODE_DETAIL_AUDIT_MARKER" ]; then
   fi
 fi
 
+
+STAGE_B_V10_NOCODE_MARKER="/home/node/.n8n/.vf_stage_b_v10_nocode_canary_imported"
+
+if [ ! -f "$STAGE_B_V10_NOCODE_MARKER" ]; then
+  echo "[VF-B-V10] Building Stage B V10 no-code canary..."
+  mkdir -p "$SWAP_DIR"
+  if n8n export:workflow --id=HGAmd1Lp70DDVxyX --output="$SWAP_DIR/stage-b-prod-for-v10.json"; then
+    node scripts/build-stage-b-v10-nocode-canary.mjs "$SWAP_DIR/stage-b-prod-for-v10.json" "$SWAP_DIR/stage-b-v10-nocode.json"
+    n8n import:workflow --input="$SWAP_DIR/stage-b-v10-nocode.json"
+    n8n publish:workflow --id=VfStageBV10Can01
+    touch "$STAGE_B_V10_NOCODE_MARKER"
+    echo "[VF-B-V10] Stage B V10 no-code canary imported and published."
+  else
+    echo "[VF-B-V10] Production Stage B export failed; canary skipped."
+  fi
+else
+  echo "[VF-B-V10] Stage B V10 no-code canary already imported; skipping."
+fi
+
 exec n8n start
