@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const [inputFile, outputFile] = process.argv.slice(2);
+const [inputFile, outputFile, mode] = process.argv.slice(2);
 if (!inputFile || !outputFile) process.exit(2);
+const productionMode = mode === '--production';
 
 const raw = JSON.parse(readFileSync(inputFile, 'utf8'));
 const workflow = structuredClone(Array.isArray(raw) ? raw[0] : raw);
@@ -14,10 +15,12 @@ const normalize = (workflow.nodes || []).find((node) => node.name === 'VF-D1 Nor
 if (!webhook || !normalize) throw new Error('Stage D required nodes missing');
 if (webhook.parameters?.path !== 'vf-main-v1-stage-d') throw new Error('Unexpected Stage D webhook');
 
-workflow.id = 'VfStageDV2Can01';
-workflow.name = 'VF-MAIN-V1 STAGE D - V2 NO-CODE CANARY';
-workflow.active = true;
-webhook.parameters.path = 'vf-main-v1-stage-d-v2-canary';
+if (!productionMode) {
+  workflow.id = 'VfStageDV2Can01';
+  workflow.name = 'VF-MAIN-V1 STAGE D - V2 NO-CODE CANARY';
+  workflow.active = true;
+  webhook.parameters.path = 'vf-main-v1-stage-d-v2-canary';
+}
 
 normalize.type = 'n8n-nodes-base.set';
 normalize.typeVersion = 3.4;
@@ -31,4 +34,4 @@ const codeNodes = (workflow.nodes || []).filter((node) => node.type === 'n8n-nod
 if (codeNodes.length) throw new Error('Stage D V2 still has Code nodes');
 
 writeFileSync(outputFile, JSON.stringify(workflow, null, 2));
-console.log('[VF-D-V2] prepared code_node_count=0');
+console.log(productionMode ? '[VF-D-V2] production patch prepared code_node_count=0' : '[VF-D-V2] prepared code_node_count=0');
